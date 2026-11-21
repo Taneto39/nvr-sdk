@@ -194,7 +194,10 @@ def _pick(listed, picks, already=(), ask_audio=False, pre_audio=()):
 
     def done(ok):
         result["ok"] = ok
-        root.destroy()
+        # quit, not destroy: OK's click is still being dispatched, and the root-level
+        # <ButtonRelease-1> binding below runs after the button's own. Destroying here
+        # deletes that binding's Tcl command first -> "invalid command name ...<lambda>".
+        root.quit()
 
     foot = ttk.Frame(root, padding=(8, 0, 8, 8))
     foot.pack(fill="x")
@@ -217,9 +220,14 @@ def _pick(listed, picks, already=(), ask_audio=False, pre_audio=()):
     root.bind("<Escape>", lambda e: done(False))
     root.protocol("WM_DELETE_WINDOW", lambda: done(False))
     root.attributes("-topmost", True)   # launched from a terminal: don't open behind it
-    root.after(300, lambda: root.attributes("-topmost", False))
+    untop = root.after(300, lambda: root.attributes("-topmost", False))
     root.focus_force()
     root.mainloop()
+    # Leave no Tk callback pending: tkinter keeps pumping Tk events while input() waits,
+    # so one that fires after destroy() prints "invalid command name" over the y/N prompt.
+    root.after_cancel(untop)
+    root.update_idletasks()   # run the after_idle recount the closing click queued
+    root.destroy()
     if not result["ok"]:
         return None
     cams = [(name, no) for name, no, v in boxes if v.get()]

@@ -19,6 +19,8 @@ Try it against a real NVR with `python nvr.py test ...` (user/password from nvrs
 """
 
 import os
+import shutil
+import tempfile
 import time
 import uuid
 import ctypes
@@ -154,7 +156,9 @@ def download(sdk, uid, channel, start, end, dst, progress_cb=None, timeout=300, 
     """
     dst_dir = os.path.dirname(os.path.abspath(dst))
     os.makedirs(dst_dir, exist_ok=True)
-    tmp = os.path.join(dst_dir, "_dl_" + uuid.uuid4().hex + ".tmp")
+    # the folder must be ASCII too (mbcs can't hold Thai on a non-Thai locale), else %TEMP%
+    tmp_dir = dst_dir if dst_dir.isascii() else tempfile.gettempdir()
+    tmp = os.path.join(tmp_dir, "_dl_" + uuid.uuid4().hex + ".tmp")
 
     cond = NET_DVR_PLAYCOND()
     cond.dwChannel = channel
@@ -222,7 +226,7 @@ def download(sdk, uid, channel, start, end, dst, progress_cb=None, timeout=300, 
         sdk.NET_DVR_StopGetFile(handle)
         if ok:
             try:
-                os.replace(tmp, dst)
+                shutil.move(tmp, dst)   # not os.replace: %TEMP% may be on another drive
             except OSError:
                 pass
         elif os.path.exists(tmp):
