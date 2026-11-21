@@ -1,0 +1,10 @@
+# nvr-sdk dependencies. Run from this folder (the wheel path is relative):
+#   pip install -r requirements.txt
+
+# Dahua NetSDK -- official Python wheel shipped inside the Dahua SDK zip
+# (vendor drop, gitignored; see README for where it comes from).
+# Hikvision needs no pip package: hik_sdk.py loads hikvision/HCNetSDK.dll via ctypes.
+./dahua/NetSDK-2.0.0.1-py3-none-win_amd64.whl
+
+# Camera.snapshot()/snapshots() (RTSP playback stills)
+opencv-python

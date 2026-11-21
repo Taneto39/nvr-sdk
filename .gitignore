@@ -1,0 +1,14 @@
+nvrs.env
+__pycache__/
+*.mp4
+*.dav
+*.tmp
+sdk_log.log
+
+# vendor SDK drops (~158MB, not ours to version) -- see README for where they come from
+hikvision/
+dahua/
+*.jpg
+
+# default folder of `nvr.py snapshots`
+output/
