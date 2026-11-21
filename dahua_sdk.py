@@ -15,7 +15,9 @@ The file is .dav (Dahua's container) -- ffmpeg reads it with the `dhav` demuxer.
 
 import ctypes
 import os
+import shutil
 import struct
+import tempfile
 import threading
 import time
 import uuid
@@ -165,8 +167,10 @@ def download(login_id, channel, start, end, dst, progress_cb=None, timeout=300):
         return None
     dst_dir = os.path.dirname(os.path.abspath(dst))
     os.makedirs(dst_dir, exist_ok=True)
-    # the SDK takes a gbk path -- write to a temporary ASCII name, then rename
-    tmp = os.path.join(dst_dir, "_dl_" + uuid.uuid4().hex + ".tmp")
+    # the SDK takes a gbk path -- write to a temporary ASCII path, then move. The folder
+    # must be ASCII too (a Thai output folder raised UnicodeEncodeError), else use %TEMP%.
+    tmp_dir = dst_dir if dst_dir.isascii() else tempfile.gettempdir()
+    tmp = os.path.join(tmp_dir, "_dl_" + uuid.uuid4().hex + ".tmp")
     handle = sdk.DownloadByTimeEx(login_id, channel, int(EM_QUERY_RECORD_TYPE.ALL),
                                   _net_time(start), _net_time(end), tmp,
                                   _pos_cb, 0, _no_data_cb, 0)
@@ -194,7 +198,7 @@ def download(login_id, channel, start, end, dst, progress_cb=None, timeout=300):
         sdk.StopDownload(handle)
         _downloads.pop(handle, None)
         if ok:
-            os.replace(tmp, dst)
+            shutil.move(tmp, dst)   # not os.replace: %TEMP% may be on another drive
         elif os.path.exists(tmp):
             try:
                 os.remove(tmp)
